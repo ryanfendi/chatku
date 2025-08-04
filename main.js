@@ -14,7 +14,7 @@ const config = {
   type: Phaser.AUTO,
   width: 800,
   height: 600,
-  backgroundColor: "#222",
+  backgroundColor: "#111",
   physics: {
     default: "arcade",
     arcade: { gravity: { y: 0 } }
@@ -30,9 +30,9 @@ function preload() {
 }
 
 function create() {
+  this.cursors = this.input.keyboard.createCursorKeys();
   this.chatBubbles = {};
   this.nameTags = {};
-  this.cursors = this.input.keyboard.createCursorKeys();
 
   socket.on("init", (id) => {
     playerId = id;
@@ -44,53 +44,51 @@ function create() {
     for (const id in players) {
       if (!serverPlayers[id]) {
         players[id].avatar.destroy();
-        players[id].bubble.destroy();
-        this.nameTags[id]?.destroy();
+        players[id].bubble?.destroy();
+        players[id].nameTag?.destroy();
         delete players[id];
       }
     }
 
     for (const id in serverPlayers) {
       const data = serverPlayers[id];
-      const avatarImg = ["pria", "wanita"].includes(data.avatarType) ? data.avatarType : "pria";
+      const avatarKey = ["pria", "wanita"].includes(data.avatarType) ? data.avatarType : "pria";
 
       if (!players[id]) {
-        const avatar = this.add.sprite(data.x, data.y, avatarImg).setScale(2);
+        const avatar = this.add.sprite(data.x, data.y, avatarKey).setScale(2);
         const bubble = this.add.text(data.x, data.y - 40, "", {
-          font: "16px Arial", fill: "#fff", backgroundColor: "#000",
+          font: "14px Arial",
+          fill: "#fff",
+          backgroundColor: "#000",
           padding: { x: 5, y: 2 }
         }).setOrigin(0.5).setVisible(false);
 
         const nameTag = this.add.text(data.x, data.y - 60, data.name || "Anonim", {
-          font: "14px Arial", fill: "#0f0"
+          font: "13px Arial",
+          fill: "#0f0"
         }).setOrigin(0.5);
 
-        players[id] = { avatar, bubble };
-        this.nameTags[id] = nameTag;
+        players[id] = { avatar, bubble, nameTag };
       } else {
-        players[id].avatar.x = data.x;
-        players[id].avatar.y = data.y;
-        players[id].bubble.x = data.x;
-        players[id].bubble.y = data.y - 40;
-        this.nameTags[id].x = data.x;
-        this.nameTags[id].y = data.y - 60;
-        this.nameTags[id].setText(data.name || "Anonim");
+        players[id].avatar.setPosition(data.x, data.y);
+        players[id].bubble.setPosition(data.x, data.y - 40);
+        players[id].nameTag.setPosition(data.x, data.y - 60);
+        players[id].nameTag.setText(data.name || "Anonim");
       }
     }
   });
 
   socket.on("chat", ({ id, msg }) => {
-    const player = players[id];
-    if (player) {
-      player.bubble.setText(msg).setVisible(true);
-      this.time.delayedCall(3000, () => {
-        player.bubble.setVisible(false);
-      });
+    const p = players[id];
+    if (p) {
+      p.bubble.setText(msg).setVisible(true);
+      this.time.delayedCall(3000, () => p.bubble.setVisible(false));
     }
   });
 
   const form = document.getElementById("chatForm");
   const input = document.getElementById("chatInput");
+
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     const msg = input.value;
@@ -113,6 +111,7 @@ function update() {
     player.avatar.x += 3;
     moved = true;
   }
+
   if (this.cursors.up.isDown) {
     player.avatar.y -= 3;
     moved = true;
