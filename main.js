@@ -3,8 +3,12 @@ const socket = io("https://aaf75f2e-9363-42c5-8eb9-ebd84ca1bc09-00-1hgnqynbkqk8k
 let playerId;
 let players = {};
 let avatarType = localStorage.getItem("avatarType") || "pria";
-let playerName = localStorage.getItem("playerName") || prompt("Masukkan nama kamu:") || "Anonim";
-localStorage.setItem("playerName", playerName);
+let playerName = localStorage.getItem("playerName");
+
+if (!playerName) {
+  playerName = prompt("Masukkan nama kamu (boleh spasi):") || "Anonim";
+  localStorage.setItem("playerName", playerName);
+}
 
 const config = {
   type: Phaser.AUTO,
@@ -53,15 +57,12 @@ function create() {
       if (!players[id]) {
         const avatar = this.add.sprite(data.x, data.y, avatarImg).setScale(2);
         const bubble = this.add.text(data.x, data.y - 40, "", {
-          font: "16px Arial",
-          fill: "#fff",
-          backgroundColor: "#000",
+          font: "16px Arial", fill: "#fff", backgroundColor: "#000",
           padding: { x: 5, y: 2 }
         }).setOrigin(0.5).setVisible(false);
 
         const nameTag = this.add.text(data.x, data.y - 60, data.name || "Anonim", {
-          font: "14px Arial",
-          fill: "#0f0"
+          font: "14px Arial", fill: "#0f0"
         }).setOrigin(0.5);
 
         players[id] = { avatar, bubble };
@@ -73,6 +74,7 @@ function create() {
         players[id].bubble.y = data.y - 40;
         this.nameTags[id].x = data.x;
         this.nameTags[id].y = data.y - 60;
+        this.nameTags[id].setText(data.name || "Anonim");
       }
     }
   });
@@ -87,12 +89,14 @@ function create() {
     }
   });
 
-  document.getElementById("chatForm").addEventListener("submit", (e) => {
+  const form = document.getElementById("chatForm");
+  const input = document.getElementById("chatInput");
+  form.addEventListener("submit", (e) => {
     e.preventDefault();
-    const msg = document.getElementById("chatInput").value;
+    const msg = input.value;
     if (msg.trim() !== "") {
       socket.emit("chat", msg);
-      document.getElementById("chatInput").value = "";
+      input.value = "";
     }
   });
 }
@@ -102,23 +106,23 @@ function update() {
   if (!player) return;
 
   let moved = false;
-  const speed = 3;
-
-  if (this.cursors.left.isDown && player.avatar.x > 20) {
-    player.avatar.x -= speed;
+  if (this.cursors.left.isDown) {
+    player.avatar.x -= 3;
     moved = true;
-  } else if (this.cursors.right.isDown && player.avatar.x < 780) {
-    player.avatar.x += speed;
+  } else if (this.cursors.right.isDown) {
+    player.avatar.x += 3;
+    moved = true;
+  }
+  if (this.cursors.up.isDown) {
+    player.avatar.y -= 3;
+    moved = true;
+  } else if (this.cursors.down.isDown) {
+    player.avatar.y += 3;
     moved = true;
   }
 
-  if (this.cursors.up.isDown && player.avatar.y > 40) {
-    player.avatar.y -= speed;
-    moved = true;
-  } else if (this.cursors.down.isDown && player.avatar.y < 580) {
-    player.avatar.y += speed;
-    moved = true;
-  }
+  player.avatar.x = Phaser.Math.Clamp(player.avatar.x, 0, 800);
+  player.avatar.y = Phaser.Math.Clamp(player.avatar.y, 0, 600);
 
   if (moved) {
     socket.emit("move", {
@@ -126,10 +130,4 @@ function update() {
       y: player.avatar.y
     });
   }
-}
-
-function selectAvatar(type) {
-  localStorage.setItem("avatarType", type);
-  document.getElementById("avatarSelect").style.display = "none";
-  location.reload();
 }
