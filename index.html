@@ -3,54 +3,126 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Pixel Chat</title>
+  <title>Chat Avatar Multiplayer</title>
   <style>
-    body { margin: 0; overflow: hidden; background: #111; }
+    body { margin: 0; overflow: hidden; background: #222; color: white; }
     canvas { display: block; margin: auto; }
+
     #chatBox {
-      position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
-      display: flex; width: 90%; max-width: 600px; z-index: 10;
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 600px;
+      display: flex;
+      z-index: 10;
     }
+
     #chatInput {
-      flex: 1; padding: 10px; font-size: 16px; border-radius: 10px; border: none;
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      outline: none;
     }
+
+    #chatForm {
+      width: 100%;
+      display: flex;
+    }
+
     #chatSend {
-      padding: 10px 15px; font-size: 16px; border-radius: 10px;
-      background: #4CAF50; color: white; border: none; cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      margin-left: 5px;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
     }
+
     #avatarSelect {
-      position: fixed; top: 20%; left: 50%; transform: translateX(-50%);
-      background: #222; color: white; padding: 20px; border-radius: 10px; z-index: 99;
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #111;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      z-index: 9999;
     }
+
+    #avatarSelect button, #avatarSelect input[type="text"] {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 10px;
+    }
+
     #avatarSelect input[type="file"] {
-      margin-top: 10px;
-    }
-    #emoteLabel {
-      position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%);
-      background: rgba(0,0,0,0.5); color: white; padding: 5px 10px; border-radius: 10px;
+      color: white;
     }
   </style>
 </head>
 <body>
 
-<div id="avatarSelect">
-  <h3>Pilih Avatar</h3>
-  <button onclick="selectDefaultAvatar('pria')">👦 Pria</button>
-  <button onclick="selectDefaultAvatar('wanita')">👧 Wanita</button><br><br>
-  <input type="file" id="uploadAvatar" accept="image/*" />
-  <input type="text" id="nameInput" placeholder="Masukkan Nama" />
-</div>
+  <div id="avatarSelect">
+    <h3>Pilih Avatar & Nama</h3>
+    <button type="button" onclick="selectDefaultAvatar('pria')">👦 Pria</button>
+    <button type="button" onclick="selectDefaultAvatar('wanita')">👧 Wanita</button>
+    <div><input type="file" id="uploadAvatar" accept="image/*" /></div>
+    <div><input type="text" id="nameInput" placeholder="Masukkan Nama" /></div>
+    <button onclick="enterGame()">🎮 Masuk Game</button>
+  </div>
 
-<div id="chatBox">
-  <input id="chatInput" placeholder="Tulis pesan..." />
-  <button id="chatSend">Kirim</button>
-</div>
+  <div id="chatBox">
+    <form id="chatForm">
+      <input type="text" id="chatInput" placeholder="Ketik pesan..." autocomplete="off" />
+      <button type="submit" id="chatSend">Kirim</button>
+    </form>
+  </div>
 
-<div id="emoteLabel">[1] Lompat | [2] Wave | [3] Dance</div>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="main.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-<script src="main.js"></script>
+  <script>
+    function selectDefaultAvatar(type) {
+      const imgUrl = type === "pria"
+        ? "https://i.imgur.com/uQaaapA.png"
+        : "https://i.imgur.com/bMolfpy.png";
+      localStorage.setItem("avatarImg", imgUrl);
+    }
 
+    document.getElementById("uploadAvatar").onchange = function (e) {
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        localStorage.setItem("avatarImg", event.target.result);
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    };
+
+    function enterGame() {
+      const name = document.getElementById("nameInput").value.trim();
+      const avatar = localStorage.getItem("avatarImg");
+
+      if (!name || !avatar) {
+        alert("Mohon pilih avatar dan isi nama!");
+        return;
+      }
+
+      localStorage.setItem("playerName", name);
+      document.getElementById("avatarSelect").style.display = "none";
+      location.reload();
+    }
+
+    if (localStorage.getItem("playerName") && localStorage.getItem("avatarImg")) {
+      document.getElementById("avatarSelect").style.display = "none";
+    }
+  </script>
 </body>
 </html>
