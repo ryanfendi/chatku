@@ -3,68 +3,54 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PixelChat</title>
+  <title>Pixel Chat</title>
   <style>
-    body { margin: 0; overflow: hidden; background: #222; color: white; }
-    #avatarSelect {
-      position: absolute;
-      top: 30%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #111;
-      padding: 20px;
-      border-radius: 10px;
-      z-index: 1000;
-    }
-    #avatarSelect button {
-      margin: 5px;
-      padding: 10px;
-      font-size: 18px;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-    #chatUI {
-      position: fixed;
-      bottom: 10px;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      z-index: 999;
+    body { margin: 0; overflow: hidden; background: #111; }
+    canvas { display: block; margin: auto; }
+    #chatBox {
+      position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+      display: flex; width: 90%; max-width: 600px; z-index: 10;
     }
     #chatInput {
-      width: 70%;
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 10px;
-      border: none;
+      flex: 1; padding: 10px; font-size: 16px; border-radius: 10px; border: none;
     }
     #chatSend {
-      padding: 10px 15px;
-      font-size: 16px;
-      margin-left: 5px;
-      border-radius: 10px;
-      background: #4CAF50;
-      border: none;
-      color: white;
-      cursor: pointer;
+      padding: 10px 15px; font-size: 16px; border-radius: 10px;
+      background: #4CAF50; color: white; border: none; cursor: pointer;
+    }
+    #avatarSelect {
+      position: fixed; top: 20%; left: 50%; transform: translateX(-50%);
+      background: #222; color: white; padding: 20px; border-radius: 10px; z-index: 99;
+    }
+    #avatarSelect input[type="file"] {
+      margin-top: 10px;
+    }
+    #emoteLabel {
+      position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.5); color: white; padding: 5px 10px; border-radius: 10px;
     }
   </style>
 </head>
 <body>
 
 <div id="avatarSelect">
-  <h3>Pilih Karakter:</h3>
-  <button onclick="selectAvatar('pria')">👨 Pria</button>
-  <button onclick="selectAvatar('wanita')">👩 Wanita</button>
+  <h3>Pilih Avatar</h3>
+  <button onclick="selectDefaultAvatar('pria')">👦 Pria</button>
+  <button onclick="selectDefaultAvatar('wanita')">👧 Wanita</button><br><br>
+  <input type="file" id="uploadAvatar" accept="image/*" />
+  <input type="text" id="nameInput" placeholder="Masukkan Nama" />
 </div>
 
-<div id="chatUI">
-  <input id="chatInput" type="text" placeholder="Ketik pesan dengan emoji 😄👍..." />
+<div id="chatBox">
+  <input id="chatInput" placeholder="Tulis pesan..." />
   <button id="chatSend">Kirim</button>
 </div>
+
+<div id="emoteLabel">[1] Lompat | [2] Wave | [3] Dance</div>
 
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="main.js"></script>
+
 </body>
 </html>
