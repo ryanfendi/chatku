@@ -3,66 +3,167 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Multiplayer Avatar</title>
+  <title>Game Avatar Multiplayer</title>
   <style>
-    body { margin: 0; overflow: hidden; background: #111; color: white; font-family: sans-serif; }
-    #uploadUI {
-      position: fixed;
-      top: 20%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #222;
-      padding: 20px;
-      border-radius: 10px;
-      z-index: 10;
-      text-align: center;
-    }
+    body { margin: 0; overflow: hidden; background: #111; color: white; }
     #chatBox {
-      position: fixed;
-      bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 90%;
-      max-width: 600px;
-      display: flex;
-      z-index: 10;
+      position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+      width: 90%; display: flex; z-index: 10;
     }
     #chatInput {
-      flex: 1;
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 10px;
-      border: none;
-      outline: none;
+      flex: 1; padding: 10px; font-size: 16px; border-radius: 10px; border: none;
     }
     #chatSend {
-      margin-left: 5px;
-      padding: 10px 15px;
-      font-size: 16px;
-      border: none;
-      border-radius: 10px;
-      background: #4CAF50;
-      color: white;
-      cursor: pointer;
+      padding: 10px 20px; background: green; color: white;
+      border: none; border-radius: 10px;
     }
+    #joystick-container {
+      position: fixed; bottom: 80px; left: 20px;
+      width: 100px; height: 100px; z-index: 999;
+    }
+    #uploadSection {
+      position: fixed; top: 10px; right: 10px; z-index: 10;
+    }
+    canvas { display: block; margin: 0 auto; }
   </style>
 </head>
 <body>
 
-<div id="uploadUI" style="display: none;">
-  <h3>Upload Avatar</h3>
-  <input type="file" id="avatarFile" accept="image/*"><br/><br/>
-  <input type="text" id="nameInput" placeholder="Masukkan nama" style="padding:8px; border-radius:8px;"><br/><br/>
-  <button onclick="startGame()">Enter Game</button>
+<div id="uploadSection">
+  <input type="file" id="avatarUpload" accept="image/*" />
 </div>
 
 <div id="chatBox">
-  <input type="text" id="chatInput" placeholder="Ketik pesan..." autocomplete="off">
+  <input type="text" id="chatInput" placeholder="Ketik pesan..." />
   <button id="chatSend">Kirim</button>
 </div>
 
+<div id="joystick-container"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-<script src="main.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nipplejs@0.9.0/dist/nipplejs.min.js"></script>
+<script>
+const socket = io("https://aaf75f2e-9363-42c5-8eb9-ebd84ca1bc09-00-1hgnqynbkqk8k.pike.replit.dev");
+let playerId;
+let players = {};
+let playerName = localStorage.getItem("playerName") || prompt("Masukkan nama kamu:") || "Anonim";
+localStorage.setItem("playerName", playerName);
+let avatarImg = localStorage.getItem("avatarImg") || "https://i.imgur.com/uQaaapA.png";
+
+const config = {
+  type: Phaser.AUTO,
+  width: 800,
+  height: 600,
+  backgroundColor: "#222",
+  physics: {
+    default: "arcade",
+    arcade: { gravity: { y: 0 } }
+  },
+  scene: { preload, create, update }
+};
+
+let joystick;
+let move = { left: false, right: false, up: false, down: false };
+let game = new Phaser.Game(config);
+
+function preload() {
+  this.load.image("avatar", avatarImg);
+}
+
+function create() {
+  this.cursors = this.input.keyboard.createCursorKeys();
+
+  socket.emit("playerData", {
+    name: playerName,
+    avatarType: "custom",
+    avatarImg: avatarImg
+  });
+
+  socket.on("init", (id) => playerId = id);
+
+  socket.on("state", (serverPlayers) => {
+    for (const id in players) {
+      if (!serverPlayers[id]) {
+        players[id].sprite.destroy();
+        players[id].nameText.destroy();
+        delete players[id];
+      }
+    }
+    for (const id in serverPlayers) {
+      const data = serverPlayers[id];
+      if (!players[id]) {
+        const sprite = this.add.sprite(data.x, data.y, "avatar").setScale(2);
+        const nameText = this.add.text(data.x, data.y - 40, data.name, {
+          font: "14px Arial", fill: "#fff"
+        }).setOrigin(0.5);
+        players[id] = { sprite, nameText };
+      } else {
+        players[id].sprite.setPosition(data.x, data.y);
+        players[id].nameText.setPosition(data.x, data.y - 40);
+      }
+    }
+  });
+
+  socket.on("chat", ({ id, msg }) => {
+    const player = players[id];
+    if (player) {
+      const text = this.add.text(player.sprite.x, player.sprite.y - 60, msg, {
+        font: "14px Arial", fill: "#fff", backgroundColor: "#000",
+        padding: { x: 5, y: 3 }
+      }).setOrigin(0.5);
+      this.time.delayedCall(3000, () => text.destroy());
+    }
+  });
+
+  // Joystick
+  joystick = nipplejs.create({
+    zone: document.getElementById('joystick-container'),
+    mode: 'static', position: { left: '50%', top: '50%' }, color: 'white'
+  });
+
+  joystick.on('dir', (evt, data) => {
+    move.left = data.direction.x === 'left';
+    move.right = data.direction.x === 'right';
+    move.up = data.direction.y === 'up';
+    move.down = data.direction.y === 'down';
+  });
+  joystick.on('end', () => move = { left: false, right: false, up: false, down: false });
+
+  // Chat
+  document.getElementById("chatSend").onclick = () => {
+    const input = document.getElementById("chatInput");
+    const msg = input.value.trim();
+    if (msg) socket.emit("chat", msg);
+    input.value = "";
+  };
+
+  // Upload avatar
+  document.getElementById("avatarUpload").onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      avatarImg = reader.result;
+      localStorage.setItem("avatarImg", avatarImg);
+      location.reload();
+    };
+    reader.readAsDataURL(file);
+  };
+}
+
+function update() {
+  const player = players[playerId];
+  if (!player) return;
+
+  let moved = false;
+  if (this.cursors.left.isDown || move.left) { player.sprite.x -= 3; moved = true; }
+  if (this.cursors.right.isDown || move.right) { player.sprite.x += 3; moved = true; }
+  if (this.cursors.up.isDown || move.up) { player.sprite.y -= 3; moved = true; }
+  if (this.cursors.down.isDown || move.down) { player.sprite.y += 3; moved = true; }
+
+  if (moved) socket.emit("move", { x: player.sprite.x, y: player.sprite.y });
+}
+</script>
 </body>
 </html>
