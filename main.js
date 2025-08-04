@@ -137,3 +137,89 @@ function update() {
     });
   }
 }
+// Voice Note
+let mediaRecorder, voiceChunks = [];
+
+function startVoiceNote() {
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.start();
+
+    mediaRecorder.ondataavailable = e => voiceChunks.push(e.data);
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(voiceChunks, { type: "audio/webm" });
+      voiceChunks = [];
+      const url = URL.createObjectURL(blob);
+      document.getElementById("voiceNoteAudio").src = url;
+      document.getElementById("voiceNoteAudio").style.display = "block";
+      socket.emit("voiceNote", { blob: url }); // bisa ditingkatkan ke Blob pengiriman
+    };
+
+    setTimeout(() => mediaRecorder.stop(), 3000); // Rekam 3 detik
+  });
+}
+
+// Call
+let peerConnection;
+const localVideo = document.getElementById("localVideo");
+const remoteVideo = document.getElementById("remoteVideo");
+
+function startCall(video = false) {
+  navigator.mediaDevices.getUserMedia({ audio: true, video }).then(stream => {
+    localVideo.srcObject = stream;
+    localVideo.style.display = "block";
+
+    peerConnection = new RTCPeerConnection();
+    stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+
+    peerConnection.ontrack = event => {
+      remoteVideo.srcObject = event.streams[0];
+      remoteVideo.style.display = "block";
+    };
+
+    peerConnection.onicecandidate = e => {
+      if (e.candidate) {
+        socket.emit("iceCandidate", e.candidate);
+      }
+    };
+
+    peerConnection.createOffer().then(offer => {
+      peerConnection.setLocalDescription(offer);
+      socket.emit("call", offer);
+    });
+  });
+}
+
+function startVideoCall() {
+  startCall(true);
+}
+
+// Handle incoming call
+socket.on("call", offer => {
+  navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(stream => {
+    localVideo.srcObject = stream;
+    localVideo.style.display = "block";
+
+    peerConnection = new RTCPeerConnection();
+    stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+
+    peerConnection.ontrack = event => {
+      remoteVideo.srcObject = event.streams[0];
+      remoteVideo.style.display = "block";
+    };
+
+    peerConnection.setRemoteDescription(offer);
+    peerConnection.createAnswer().then(answer => {
+      peerConnection.setLocalDescription(answer);
+      socket.emit("answer", answer);
+    });
+  });
+});
+
+socket.on("answer", answer => {
+  peerConnection.setRemoteDescription(answer);
+});
+
+socket.on("iceCandidate", candidate => {
+  peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+});
