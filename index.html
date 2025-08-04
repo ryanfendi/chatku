@@ -1,20 +1,20 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Chat Avatar Multiplayer</title>
+  <title>Chat Multiplayer Avatar</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { margin: 0; overflow: hidden; background: #111; }
-    canvas { display: block; }
+    canvas { display: block; margin: auto; }
     #chatBox {
       position: fixed;
       bottom: 10px;
       left: 50%;
       transform: translateX(-50%);
-      display: flex;
       width: 90%;
       max-width: 600px;
+      display: flex;
       z-index: 10;
     }
     #chatInput {
@@ -41,6 +41,7 @@
       <button type="submit" id="chatSend">Kirim</button>
     </form>
   </div>
+
   <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="main.js"></script>
