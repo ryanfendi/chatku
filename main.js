@@ -1,16 +1,15 @@
-const socket = io("https://aaf75f2e-9363-42c5-8eb9-ebd84ca1bc09-00-1hgnqynbkqk8k.pike.replit.dev");
+const socket = io("https://aaf75f2e-9363-42c5-8eb9-ebd84ca1bc09-00-1hgnqynbkqk8k.pike.replit.dev/");
 
 let playerId;
 let players = {};
-let playerName = localStorage.getItem("playerName") || prompt("Masukkan nama:") || "Anonim";
-localStorage.setItem("playerName", playerName);
-let avatarImg = localStorage.getItem("avatarImg") || "https://i.imgur.com/uQaaapA.png"; // default pria
+let playerName = localStorage.getItem("playerName") || "Anonim";
+let avatarImg = localStorage.getItem("customAvatar") || null;
 
 const config = {
   type: Phaser.AUTO,
   width: 800,
   height: 600,
-  backgroundColor: "#333",
+  backgroundColor: "#222",
   physics: {
     default: "arcade",
     arcade: { gravity: { y: 0 } }
@@ -18,95 +17,86 @@ const config = {
   scene: { preload, create, update }
 };
 
-let joystick;
-let move = { left: false, right: false, up: false, down: false };
-
 const game = new Phaser.Game(config);
 
 function preload() {
-  this.load.image("avatar", avatarImg);
+  this.load.image("default", "https://i.imgur.com/uQaaapA.png");
+  if (avatarImg) {
+    this.textures.addBase64("customAvatar", avatarImg);
+  }
 }
 
 function create() {
   this.cursors = this.input.keyboard.createCursorKeys();
-
-  socket.emit("playerData", {
-    name: playerName,
-    avatarType: "custom",
-    avatarImg: avatarImg
-  });
+  this.nameTags = {};
+  this.chatBubbles = {};
 
   socket.on("init", (id) => {
     playerId = id;
+    socket.emit("playerData", {
+      name: playerName,
+      avatarType: avatarImg ? "custom" : "default",
+      avatarImg
+    });
   });
 
   socket.on("state", (serverPlayers) => {
     for (const id in players) {
       if (!serverPlayers[id]) {
-        players[id].sprite.destroy();
-        players[id].nameText.destroy();
+        players[id].avatar.destroy();
+        this.nameTags[id]?.destroy();
+        this.chatBubbles[id]?.destroy();
         delete players[id];
       }
     }
 
     for (const id in serverPlayers) {
       const data = serverPlayers[id];
+      const texture = data.avatarImg ? "customAvatar" : "default";
+
       if (!players[id]) {
-        const sprite = this.add.sprite(data.x, data.y, "avatar").setScale(2);
-        const nameText = this.add.text(data.x, data.y - 40, data.name, {
+        const sprite = this.add.sprite(data.x, data.y, texture).setDisplaySize(40, 40);
+        const nameTag = this.add.text(data.x, data.y - 30, data.name || "Anonim", {
           font: "14px Arial",
-          fill: "#fff"
+          fill: "#0f0"
         }).setOrigin(0.5);
-        players[id] = { sprite, nameText };
+
+        const bubble = this.add.text(data.x, data.y - 50, "", {
+          font: "14px Arial",
+          fill: "#fff",
+          backgroundColor: "#000",
+          padding: { x: 6, y: 3 }
+        }).setOrigin(0.5).setVisible(false);
+
+        players[id] = { avatar: sprite };
+        this.nameTags[id] = nameTag;
+        this.chatBubbles[id] = bubble;
       } else {
-        players[id].sprite.x = data.x;
-        players[id].sprite.y = data.y;
-        players[id].nameText.x = data.x;
-        players[id].nameText.y = data.y - 40;
+        players[id].avatar.setPosition(data.x, data.y);
+        this.nameTags[id].setPosition(data.x, data.y - 30);
+        this.chatBubbles[id].setPosition(data.x, data.y - 50);
       }
     }
   });
 
   socket.on("chat", ({ id, msg }) => {
-    const player = players[id];
-    if (player) {
-      const text = this.add.text(player.sprite.x, player.sprite.y - 60, msg, {
-        font: "14px Arial",
-        fill: "#fff",
-        backgroundColor: "#000",
-        padding: { x: 5, y: 3 }
-      }).setOrigin(0.5);
-      this.time.delayedCall(3000, () => text.destroy());
+    const bubble = this.chatBubbles[id];
+    if (bubble) {
+      bubble.setText(msg).setVisible(true);
+      this.time.delayedCall(3000, () => bubble.setVisible(false));
     }
   });
 
-  // chat
-  document.getElementById("chatSend").onclick = () => {
-    const input = document.getElementById("chatInput");
+  // Chat box
+  const form = document.getElementById("chatForm");
+  const input = document.getElementById("chatInput");
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
     const msg = input.value.trim();
     if (msg) {
       socket.emit("chat", msg);
       input.value = "";
     }
-  };
-
-  // joystick
-  joystick = nipplejs.create({
-    zone: document.getElementById('joystick-container'),
-    mode: 'static',
-    position: { left: '50%', top: '50%' },
-    color: 'white'
-  });
-
-  joystick.on('dir', (evt, data) => {
-    move.left = data.direction.x === 'left';
-    move.right = data.direction.x === 'right';
-    move.up = data.direction.y === 'up';
-    move.down = data.direction.y === 'down';
-  });
-
-  joystick.on('end', () => {
-    move = { left: false, right: false, up: false, down: false };
   });
 }
 
@@ -115,27 +105,31 @@ function update() {
   if (!player) return;
 
   let moved = false;
-  if (this.cursors.left.isDown || move.left) {
-    player.sprite.x -= 3;
+  if (this.cursors.left.isDown) {
+    player.avatar.x -= 2;
     moved = true;
   }
-  if (this.cursors.right.isDown || move.right) {
-    player.sprite.x += 3;
+  if (this.cursors.right.isDown) {
+    player.avatar.x += 2;
     moved = true;
   }
-  if (this.cursors.up.isDown || move.up) {
-    player.sprite.y -= 3;
+  if (this.cursors.up.isDown) {
+    player.avatar.y -= 2;
     moved = true;
   }
-  if (this.cursors.down.isDown || move.down) {
-    player.sprite.y += 3;
+  if (this.cursors.down.isDown) {
+    player.avatar.y += 2;
     moved = true;
   }
 
+  // Batas layar
+  player.avatar.x = Phaser.Math.Clamp(player.avatar.x, 0, 800);
+  player.avatar.y = Phaser.Math.Clamp(player.avatar.y, 0, 600);
+
   if (moved) {
     socket.emit("move", {
-      x: player.sprite.x,
-      y: player.sprite.y
+      x: player.avatar.x,
+      y: player.avatar.y
     });
   }
 }
