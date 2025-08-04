@@ -1,4 +1,4 @@
-const socket = io("https://aaf75f2e-9363-42c5-8eb9-ebd84ca1bc09-00-1hgnqynbkqk8k.pike.replit.dev/");
+const socket = io("https://aaf75f2e-9363-42c5-8eb9-ebd84ca1bc09-00-1hgnqynbkqk8k.pike.replit.dev");
 
 let playerId, players = {}, avatarType = localStorage.getItem("avatarType") || "";
 
@@ -25,7 +25,7 @@ function initGame() {
   };
 
   const game = new Phaser.Game(config);
-  let cursors, joystick;
+  let cursors;
 
   function preload() {
     this.load.image("pria", "https://i.imgur.com/uQaaapA.png");
@@ -34,19 +34,21 @@ function initGame() {
 
   function create() {
     cursors = this.input.keyboard.createCursorKeys();
-
     this.cameras.main.setBounds(0, 0, 1600, 1200);
     this.physics.world.setBounds(0, 0, 1600, 1200);
 
     socket.emit("avatarType", avatarType);
+    socket.emit("requestInit");
 
-    socket.on("init", id => playerId = id);
+    socket.on("init", id => {
+      playerId = id;
+    });
 
     socket.on("state", data => {
       for (let id in data) {
         const p = data[id];
         if (!players[id]) {
-          const avatar = this.physics.add.sprite(p.x, p.y, p.avatarType).setScale(2);
+          const avatar = this.physics.add.sprite(p.x, p.y, p.avatarType || "pria").setScale(2);
           avatar.setCollideWorldBounds(true);
           const bubble = this.add.text(p.x, p.y - 40, "", {
             font: "16px Arial",
@@ -87,6 +89,11 @@ function initGame() {
         input.value = "";
       }
     };
+
+    // Prevent movement when input focused
+    document.getElementById("chatInput").addEventListener("keydown", (e) => {
+      e.stopPropagation(); // so space works normally
+    });
   }
 
   function update() {
@@ -94,24 +101,26 @@ function initGame() {
     if (!player) return;
 
     let moved = false;
-    if (cursors.left.isDown) {
-      player.avatar.x -= 3;
-      moved = true;
-    } else if (cursors.right.isDown) {
-      player.avatar.x += 3;
-      moved = true;
-    }
-    if (cursors.up.isDown) {
-      player.avatar.y -= 3;
-      moved = true;
-    } else if (cursors.down.isDown) {
-      player.avatar.y += 3;
-      moved = true;
-    }
+    const input = document.getElementById("chatInput");
+    if (document.activeElement !== input) {
+      if (cursors.left.isDown) {
+        player.avatar.x -= 3;
+        moved = true;
+      } else if (cursors.right.isDown) {
+        player.avatar.x += 3;
+        moved = true;
+      }
+      if (cursors.up.isDown) {
+        player.avatar.y -= 3;
+        moved = true;
+      } else if (cursors.down.isDown) {
+        player.avatar.y += 3;
+        moved = true;
+      }
 
-    // Batas area map
-    player.avatar.x = Phaser.Math.Clamp(player.avatar.x, 0, 800);
-    player.avatar.y = Phaser.Math.Clamp(player.avatar.y, 0, 600);
+      player.avatar.x = Phaser.Math.Clamp(player.avatar.x, 0, 800);
+      player.avatar.y = Phaser.Math.Clamp(player.avatar.y, 0, 600);
+    }
 
     if (moved) {
       socket.emit("move", {
