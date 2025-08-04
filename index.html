@@ -3,116 +3,66 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PixelChat Avatar</title>
+  <title>Multiplayer Avatar</title>
   <style>
-    body { margin: 0; background: #222; color: white; overflow: hidden; font-family: sans-serif; }
-    canvas { display: block; margin: auto; }
+    body { margin: 0; overflow: hidden; background: #111; color: white; font-family: sans-serif; }
+    #uploadUI {
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 10;
+      text-align: center;
+    }
     #chatBox {
-      position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
-      width: 90%; max-width: 600px; display: flex; z-index: 10;
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 600px;
+      display: flex;
+      z-index: 10;
     }
     #chatInput {
-      flex: 1; padding: 10px; font-size: 16px; border-radius: 10px; outline: none;
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 10px;
       border: none;
+      outline: none;
     }
     #chatSend {
-      padding: 10px 15px; font-size: 16px; border-radius: 10px;
-      border: none; background-color: #4CAF50; color: white; cursor: pointer;
       margin-left: 5px;
-    }
-    #avatarSelect {
-      position: fixed; top: 25%; left: 50%; transform: translateX(-50%);
-      background: #111; padding: 20px; border-radius: 10px; text-align: center; z-index: 1000;
-    }
-    #avatarSelect input, #avatarSelect button {
-      margin: 10px; padding: 10px; font-size: 16px; border-radius: 10px;
-    }
-    #avatarSelect .avatarButtons button {
-      width: 45%; margin: 5px;
+      padding: 10px 15px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      background: #4CAF50;
+      color: white;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-<!-- Avatar Selection UI -->
-<div id="avatarSelect">
-  <h3>Masukkan Nama & Pilih Avatar</h3>
-  <input type="text" id="nameInput" placeholder="Nama kamu" /><br/>
-  <div class="avatarButtons">
-    <button onclick="setAvatarType('pria')">👦 Pria</button>
-    <button onclick="setAvatarType('wanita')">👧 Wanita</button>
-  </div>
-  <input type="file" id="avatarUpload" accept="image/*"/><br/>
-  <button onclick="enterGame()" style="width: 100%; background: #4CAF50; color: white;">Enter Game</button>
+<div id="uploadUI" style="display: none;">
+  <h3>Upload Avatar</h3>
+  <input type="file" id="avatarFile" accept="image/*"><br/><br/>
+  <input type="text" id="nameInput" placeholder="Masukkan nama" style="padding:8px; border-radius:8px;"><br/><br/>
+  <button onclick="startGame()">Enter Game</button>
 </div>
 
-<!-- Chat UI -->
 <div id="chatBox">
-  <form id="chatForm" style="display: flex; width: 100%;">
-    <input type="text" id="chatInput" placeholder="Ketik pesan..." autocomplete="off" required />
-    <button type="submit" id="chatSend">Kirim</button>
-  </form>
+  <input type="text" id="chatInput" placeholder="Ketik pesan..." autocomplete="off">
+  <button id="chatSend">Kirim</button>
 </div>
 
-<script>
-  let avatarType = "pria"; // default
-  function setAvatarType(type) {
-    avatarType = type;
-  }
-
-  function enterGame() {
-    const name = document.getElementById("nameInput").value.trim();
-    if (!name) return alert("Masukkan nama terlebih dahulu");
-
-    localStorage.setItem("playerName", name);
-    localStorage.setItem("avatarType", avatarType);
-
-    const file = document.getElementById("avatarUpload").files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        localStorage.setItem("avatarCustom", reader.result);
-        document.getElementById("avatarSelect").style.display = "none";
-        startGame();
-      };
-      reader.readAsDataURL(file);
-    } else {
-      document.getElementById("avatarSelect").style.display = "none";
-      startGame();
-    }
-  }
-
-  function startGame() {
-    const script1 = document.createElement("script");
-    script1.src = "https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js";
-    document.body.appendChild(script1);
-
-    const script2 = document.createElement("script");
-    script2.src = "https://cdn.socket.io/4.7.2/socket.io.min.js";
-    document.body.appendChild(script2);
-
-    const script3 = document.createElement("script");
-    script3.src = "main.js";
-    document.body.appendChild(script3);
-  }
-</script>
-<!-- Chat Box -->
-<div id="chatBox">
-  <form id="chatForm" style="display:flex; width: 100%;">
-    <input type="text" id="chatInput" placeholder="Ketik pesan..." autocomplete="off" />
-    <button type="submit" id="chatSend">Kirim</button>
-    <button type="button" onclick="startVoiceNote()">🎤</button>
-    <button type="button" onclick="startCall()">📞</button>
-    <button type="button" onclick="startVideoCall()">📹</button>
-  </form>
-</div>
-
-<!-- Audio Container -->
-<audio id="voiceNoteAudio" controls style="display:none;"></audio>
-
-<!-- Video Elements -->
-<video id="localVideo" autoplay muted playsinline style="position:fixed; bottom:10px; right:120px; width:100px; height:80px; display:none;"></video>
-<video id="remoteVideo" autoplay playsinline style="position:fixed; bottom:100px; right:120px; width:100px; height:80px; display:none;"></video>
-
+<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="main.js"></script>
 </body>
 </html>
