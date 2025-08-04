@@ -1,12 +1,24 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Pixel Chat Multiplayer</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PixelChat</title>
   <style>
     body { margin: 0; overflow: hidden; background: #111; }
-    #chatForm {
+    #nameForm {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #222;
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 10;
+      text-align: center;
+    }
+    #chatUI {
       position: fixed;
       bottom: 10px;
       left: 50%;
@@ -20,201 +32,40 @@
       flex: 1;
       padding: 10px;
       font-size: 16px;
-      border-radius: 10px;
       border: none;
-      outline: none;
+      border-radius: 10px;
     }
-    #chatSend {
-      padding: 10px 20px;
+    #sendBtn {
       margin-left: 5px;
-      background: #4caf50;
+      padding: 10px 15px;
+      background: #4CAF50;
       color: white;
       border: none;
       border-radius: 10px;
       cursor: pointer;
-      font-weight: bold;
     }
-    #avatarSelect {
-      position: fixed;
-      top: 30%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #222;
-      color: white;
-      padding: 20px;
-      border-radius: 10px;
-      z-index: 999;
-      text-align: center;
-    }
-    #avatarSelect button {
-      font-size: 18px;
-      margin: 5px;
-      padding: 10px 20px;
-      border-radius: 10px;
-      cursor: pointer;
-    }
+    canvas { display: block; }
   </style>
 </head>
 <body>
-  <!-- Avatar Selection -->
-  <div id="avatarSelect">
-    <h3>Pilih Avatar</h3>
-    <button onclick="selectAvatar('pria')">👨 Pria</button>
-    <button onclick="selectAvatar('wanita')">👩 Wanita</button>
-  </div>
 
-  <!-- Chat Input -->
-  <form id="chatForm">
-    <input id="chatInput" placeholder="Ketik pesan..." autocomplete="off" />
-    <button id="chatSend" type="submit">Kirim</button>
-  </form>
+<!-- Form nama dan avatar -->
+<div id="nameForm">
+  <h3>Masukkan Nama & Pilih Avatar</h3>
+  <input type="text" id="nameInput" placeholder="Nama kamu" /><br/><br/>
+  <button onclick="startGame('pria')">👨 Pria</button>
+  <button onclick="startGame('wanita')">👩 Wanita</button>
+</div>
 
-  <!-- Libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<!-- Chat -->
+<div id="chatUI" style="display: none;">
+  <input id="chatInput" placeholder="Ketik pesan..." />
+  <button id="sendBtn">Kirim</button>
+</div>
 
-  <!-- Main Logic -->
-  <script>
-    const socket = io("https://aaf75f2e-9363-42c5-8eb9-ebd84ca1bc09-00-1hgnqynbkqk8k.pike.replit.dev");
-
-    let playerId;
-    let players = {};
-    let avatarType = localStorage.getItem("avatarType") || "pria";
-    let playerName = localStorage.getItem("playerName") || prompt("Masukkan nama kamu:") || "Anonim";
-    localStorage.setItem("playerName", playerName);
-
-    const config = {
-      type: Phaser.AUTO,
-      width: 800,
-      height: 600,
-      backgroundColor: "#222",
-      physics: {
-        default: "arcade",
-        arcade: { gravity: { y: 0 } }
-      },
-      scene: { preload, create, update }
-    };
-
-    const game = new Phaser.Game(config);
-
-    function preload() {
-      this.load.image("pria", "https://i.imgur.com/uQaaapA.png");
-      this.load.image("wanita", "https://i.imgur.com/bMolfpy.png");
-    }
-
-    function create() {
-      this.cursors = this.input.keyboard.createCursorKeys();
-      this.chatBubbles = {};
-      this.nameTags = {};
-
-      socket.on("init", (id) => {
-        playerId = id;
-        socket.emit("avatarType", avatarType);
-        socket.emit("playerName", playerName);
-      });
-
-      socket.on("state", (serverPlayers) => {
-        for (const id in players) {
-          if (!serverPlayers[id]) {
-            players[id].avatar.destroy();
-            players[id].bubble.destroy();
-            this.nameTags[id]?.destroy();
-            delete players[id];
-          }
-        }
-
-        for (const id in serverPlayers) {
-          const data = serverPlayers[id];
-          const avatarImg = ["pria", "wanita"].includes(data.avatarType) ? data.avatarType : "pria";
-
-          if (!players[id]) {
-            const avatar = this.add.sprite(data.x, data.y, avatarImg).setScale(2);
-            const bubble = this.add.text(data.x, data.y - 40, "", {
-              font: "16px Arial",
-              fill: "#fff",
-              backgroundColor: "#000",
-              padding: { x: 5, y: 2 }
-            }).setOrigin(0.5).setVisible(false);
-
-            const nameTag = this.add.text(data.x, data.y - 60, data.name || "Anonim", {
-              font: "14px Arial",
-              fill: "#0f0"
-            }).setOrigin(0.5);
-
-            players[id] = { avatar, bubble };
-            this.nameTags[id] = nameTag;
-          } else {
-            players[id].avatar.x = data.x;
-            players[id].avatar.y = data.y;
-            players[id].bubble.x = data.x;
-            players[id].bubble.y = data.y - 40;
-            this.nameTags[id].x = data.x;
-            this.nameTags[id].y = data.y - 60;
-            this.nameTags[id].setText(data.name || "Anonim");
-          }
-        }
-      });
-
-      socket.on("chat", ({ id, msg }) => {
-        const player = players[id];
-        if (player) {
-          player.bubble.setText(msg).setVisible(true);
-          this.time.delayedCall(3000, () => {
-            player.bubble.setVisible(false);
-          });
-        }
-      });
-
-      document.getElementById("chatForm").addEventListener("submit", (e) => {
-        e.preventDefault();
-        const input = document.getElementById("chatInput");
-        const msg = input.value.trim();
-        if (msg) {
-          socket.emit("chat", msg);
-          input.value = "";
-        }
-      });
-    }
-
-    function update() {
-      const player = players[playerId];
-      if (!player) return;
-
-      let moved = false;
-      let x = player.avatar.x;
-      let y = player.avatar.y;
-
-      if (this.cursors.left.isDown && x > 0) {
-        x -= 3;
-        moved = true;
-      } else if (this.cursors.right.isDown && x < 800) {
-        x += 3;
-        moved = true;
-      }
-      if (this.cursors.up.isDown && y > 0) {
-        y -= 3;
-        moved = true;
-      } else if (this.cursors.down.isDown && y < 600) {
-        y += 3;
-        moved = true;
-      }
-
-      if (moved) {
-        player.avatar.x = x;
-        player.avatar.y = y;
-        socket.emit("move", { x, y });
-      }
-    }
-
-    function selectAvatar(type) {
-      localStorage.setItem("avatarType", type);
-      document.getElementById("avatarSelect").style.display = "none";
-      location.reload();
-    }
-
-    if (localStorage.getItem("avatarType")) {
-      document.getElementById("avatarSelect").style.display = "none";
-    }
-  </script>
+<!-- Script -->
+<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="main.js"></script>
 </body>
 </html>
