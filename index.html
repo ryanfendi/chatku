@@ -1,24 +1,38 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Chat Multiplayer Avatar</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PixelChat</title>
   <style>
-    body { margin: 0; overflow: hidden; background: #111; }
-    canvas { display: block; margin: auto; }
-    #chatBox {
-      position: fixed;
-      bottom: 10px;
+    body { margin: 0; overflow: hidden; background: #222; color: white; }
+    #avatarSelect {
+      position: absolute;
+      top: 30%;
       left: 50%;
       transform: translateX(-50%);
-      width: 90%;
-      max-width: 600px;
+      background: #111;
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 1000;
+    }
+    #avatarSelect button {
+      margin: 5px;
+      padding: 10px;
+      font-size: 18px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    #chatUI {
+      position: fixed;
+      bottom: 10px;
+      width: 100%;
       display: flex;
-      z-index: 10;
+      justify-content: center;
+      z-index: 999;
     }
     #chatInput {
-      flex: 1;
+      width: 70%;
       padding: 10px;
       font-size: 16px;
       border-radius: 10px;
@@ -27,23 +41,30 @@
     #chatSend {
       padding: 10px 15px;
       font-size: 16px;
+      margin-left: 5px;
       border-radius: 10px;
       background: #4CAF50;
-      color: white;
       border: none;
+      color: white;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <div id="chatBox">
-    <form id="chatForm">
-      <input type="text" id="chatInput" placeholder="Ketik pesan..." />
-      <button type="submit" id="chatSend">Kirim</button>
-    </form>
-  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-  <script src="main.js"></script>
+<div id="avatarSelect">
+  <h3>Pilih Karakter:</h3>
+  <button onclick="selectAvatar('pria')">👨 Pria</button>
+  <button onclick="selectAvatar('wanita')">👩 Wanita</button>
+</div>
+
+<div id="chatUI">
+  <input id="chatInput" type="text" placeholder="Ketik pesan dengan emoji 😄👍..." />
+  <button id="chatSend">Kirim</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="main.js"></script>
 </body>
 </html>
