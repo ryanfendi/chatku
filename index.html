@@ -3,11 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chat Avatar Multiplayer</title>
+  <title>PixelChat</title>
   <style>
     body { margin: 0; overflow: hidden; background: #222; color: white; }
     canvas { display: block; margin: auto; }
-
     #chatBox {
       position: fixed;
       bottom: 10px;
@@ -18,7 +17,6 @@
       display: flex;
       z-index: 10;
     }
-
     #chatInput {
       flex: 1;
       padding: 10px;
@@ -27,12 +25,6 @@
       border-radius: 10px;
       outline: none;
     }
-
-    #chatForm {
-      width: 100%;
-      display: flex;
-    }
-
     #chatSend {
       background-color: #4CAF50;
       color: white;
@@ -43,86 +35,66 @@
       font-size: 16px;
       cursor: pointer;
     }
-
     #avatarSelect {
       position: fixed;
-      top: 20%;
+      top: 30%;
       left: 50%;
       transform: translateX(-50%);
       background: #111;
       padding: 20px;
       border-radius: 10px;
       text-align: center;
-      z-index: 9999;
+      z-index: 999;
     }
-
-    #avatarSelect button, #avatarSelect input[type="text"] {
+    #avatarSelect input {
+      margin-bottom: 10px;
+      padding: 8px;
+      font-size: 16px;
+      width: 80%;
+      border-radius: 8px;
+    }
+    #avatarSelect button {
       margin: 10px;
       padding: 10px 20px;
-      font-size: 16px;
+      font-size: 18px;
       border-radius: 10px;
-    }
-
-    #avatarSelect input[type="file"] {
-      color: white;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-  <div id="avatarSelect">
-    <h3>Pilih Avatar & Nama</h3>
-    <button type="button" onclick="selectDefaultAvatar('pria')">👦 Pria</button>
-    <button type="button" onclick="selectDefaultAvatar('wanita')">👧 Wanita</button>
-    <div><input type="file" id="uploadAvatar" accept="image/*" /></div>
-    <div><input type="text" id="nameInput" placeholder="Masukkan Nama" /></div>
-    <button onclick="enterGame()">🎮 Masuk Game</button>
-  </div>
+<div id="avatarSelect">
+  <h3 style="color: white;">Masukkan Nama dan Pilih Avatar</h3>
+  <input type="text" id="nameInput" placeholder="Nama kamu..." />
+  <br />
+  <button onclick="selectAvatar('pria')">👨 Pria</button>
+  <button onclick="selectAvatar('wanita')">👩 Wanita</button>
+</div>
 
-  <div id="chatBox">
-    <form id="chatForm">
-      <input type="text" id="chatInput" placeholder="Ketik pesan..." autocomplete="off" />
-      <button type="submit" id="chatSend">Kirim</button>
-    </form>
-  </div>
+<div id="chatBox">
+  <input type="text" id="chatInput" placeholder="Ketik pesan..." autocomplete="off" />
+  <button id="chatSend">Kirim</button>
+</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-  <script src="main.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="main.js"></script>
 
-  <script>
-    function selectDefaultAvatar(type) {
-      const imgUrl = type === "pria"
-        ? "https://i.imgur.com/uQaaapA.png"
-        : "https://i.imgur.com/bMolfpy.png";
-      localStorage.setItem("avatarImg", imgUrl);
-    }
+<script>
+  function selectAvatar(type) {
+    const name = document.getElementById("nameInput").value.trim();
+    if (!name) return alert("Masukkan nama terlebih dahulu.");
+    localStorage.setItem("avatarType", type);
+    localStorage.setItem("playerName", name);
+    document.getElementById("avatarSelect").style.display = "none";
+    location.reload();
+  }
 
-    document.getElementById("uploadAvatar").onchange = function (e) {
-      const reader = new FileReader();
-      reader.onload = function (event) {
-        localStorage.setItem("avatarImg", event.target.result);
-      };
-      reader.readAsDataURL(e.target.files[0]);
-    };
+  if (localStorage.getItem("avatarType") && localStorage.getItem("playerName")) {
+    document.getElementById("avatarSelect").style.display = "none";
+  }
+</script>
 
-    function enterGame() {
-      const name = document.getElementById("nameInput").value.trim();
-      const avatar = localStorage.getItem("avatarImg");
-
-      if (!name || !avatar) {
-        alert("Mohon pilih avatar dan isi nama!");
-        return;
-      }
-
-      localStorage.setItem("playerName", name);
-      document.getElementById("avatarSelect").style.display = "none";
-      location.reload();
-    }
-
-    if (localStorage.getItem("playerName") && localStorage.getItem("avatarImg")) {
-      document.getElementById("avatarSelect").style.display = "none";
-    }
-  </script>
 </body>
 </html>
