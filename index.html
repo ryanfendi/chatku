@@ -1,58 +1,54 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PixelChat</title>
+  <title>PixelChat Avatar</title>
   <style>
-    body { margin: 0; overflow: hidden; background: #222; color: white; }
+    body { margin: 0; background: #222; color: white; overflow: hidden; font-family: sans-serif; }
     canvas { display: block; margin: auto; }
     #chatBox {
       position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
       width: 90%; max-width: 600px; display: flex; z-index: 10;
     }
     #chatInput {
-      flex: 1; padding: 10px; font-size: 16px;
-      border: none; border-radius: 10px; outline: none;
+      flex: 1; padding: 10px; font-size: 16px; border-radius: 10px; outline: none;
+      border: none;
     }
     #chatSend {
-      background-color: #4CAF50; color: white; padding: 10px 15px;
-      border: none; margin-left: 5px; border-radius: 10px;
-      font-size: 16px; cursor: pointer;
+      padding: 10px 15px; font-size: 16px; border-radius: 10px;
+      border: none; background-color: #4CAF50; color: white; cursor: pointer;
+      margin-left: 5px;
     }
     #avatarSelect {
-      position: fixed; top: 30%; left: 50%; transform: translateX(-50%);
-      background: #111; padding: 20px; border-radius: 10px;
-      text-align: center; z-index: 999;
+      position: fixed; top: 25%; left: 50%; transform: translateX(-50%);
+      background: #111; padding: 20px; border-radius: 10px; text-align: center; z-index: 1000;
     }
     #avatarSelect button {
-      margin: 10px; padding: 10px 20px; font-size: 18px;
-      border-radius: 10px; cursor: pointer;
+      margin: 10px; padding: 10px 20px; font-size: 18px; border-radius: 10px;
+      cursor: pointer;
     }
-    #avatarUpload {
-      margin-top: 10px; color: white;
-    }
-    #joystick {
-      position: fixed; bottom: 80px; left: 10px; z-index: 9999;
-      width: 100px; height: 100px;
+    #avatarSelect input {
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
 
 <div id="avatarSelect">
-  <h3 style="color: white;">Pilih Avatar</h3>
+  <h3>Masukkan Nama & Pilih Avatar</h3>
+  <input type="text" id="nameInput" placeholder="Nama kamu" /><br/>
   <button onclick="selectAvatar('pria')">👦 Pria</button>
-  <button onclick="selectAvatar('wanita')">👧 Wanita</button><br>
-  <input type="file" id="avatarUpload" accept="image/*">
+  <button onclick="selectAvatar('wanita')">👧 Wanita</button><br/>
+  <input type="file" id="avatarUpload" accept="image/*"/>
 </div>
 
 <div id="chatBox">
-  <input type="text" id="chatInput" placeholder="Ketik pesan..." />
-  <button id="chatSend">Kirim</button>
+  <form id="chatForm" style="display: flex; width: 100%;">
+    <input type="text" id="chatInput" placeholder="Ketik pesan..." autocomplete="off" required />
+    <button type="submit" id="chatSend">Kirim</button>
+  </form>
 </div>
-
-<canvas id="joystick"></canvas>
 
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
