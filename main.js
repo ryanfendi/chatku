@@ -1,137 +1,123 @@
 const socket = io("https://aaf75f2e-9363-42c5-8eb9-ebd84ca1bc09-00-1hgnqynbkqk8k.pike.replit.dev/");
 
-let playerId;
-let players = {};
-let avatarType = localStorage.getItem("avatarType") || "pria";
-let playerName = localStorage.getItem("playerName") || prompt("Masukkan nama kamu:") || "Anonim";
-localStorage.setItem("playerName", playerName);
+let playerId, players = {}, avatarType = localStorage.getItem("avatarType") || "";
 
-const config = {
-  type: Phaser.AUTO,
-  width: 800,
-  height: 600,
-  backgroundColor: "#222",
-  physics: {
-    default: "arcade",
-    arcade: { gravity: { y: 0 } }
-  },
-  scene: { preload, create, update }
-};
-
-const game = new Phaser.Game(config);
-
-function preload() {
-  this.load.image("pria", "https://i.imgur.com/uQaaapA.png");
-  this.load.image("wanita", "https://i.imgur.com/bMolfpy.png");
+function selectAvatar(type) {
+  avatarType = type;
+  localStorage.setItem("avatarType", type);
+  document.getElementById("avatarSelect").style.display = "none";
+  initGame();
 }
 
-function create() {
-  this.cursors = this.input.keyboard.createCursorKeys();
-  this.input.keyboard.removeCapture([Phaser.Input.Keyboard.KeyCodes.SPACE]); // agar spasi bisa digunakan di input
+if (avatarType) {
+  document.getElementById("avatarSelect").style.display = "none";
+  initGame();
+}
 
-  this.chatBubbles = {};
-  this.nameTags = {};
+function initGame() {
+  const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    backgroundColor: "#333",
+    physics: { default: "arcade", arcade: { debug: false } },
+    scene: { preload, create, update }
+  };
 
-  socket.on("init", (id) => {
-    playerId = id;
+  const game = new Phaser.Game(config);
+  let cursors, joystick;
+
+  function preload() {
+    this.load.image("pria", "https://i.imgur.com/uQaaapA.png");
+    this.load.image("wanita", "https://i.imgur.com/bMolfpy.png");
+  }
+
+  function create() {
+    cursors = this.input.keyboard.createCursorKeys();
+
+    this.cameras.main.setBounds(0, 0, 1600, 1200);
+    this.physics.world.setBounds(0, 0, 1600, 1200);
+
     socket.emit("avatarType", avatarType);
-    socket.emit("playerName", playerName);
-  });
 
-  socket.on("state", (serverPlayers) => {
-    for (const id in players) {
-      if (!serverPlayers[id]) {
-        players[id].avatar?.destroy();
-        players[id].bubble?.destroy();
-        this.nameTags[id]?.destroy();
-        delete players[id];
+    socket.on("init", id => playerId = id);
+
+    socket.on("state", data => {
+      for (let id in data) {
+        const p = data[id];
+        if (!players[id]) {
+          const avatar = this.physics.add.sprite(p.x, p.y, p.avatarType).setScale(2);
+          avatar.setCollideWorldBounds(true);
+          const bubble = this.add.text(p.x, p.y - 40, "", {
+            font: "16px Arial",
+            fill: "#fff",
+            backgroundColor: "#000",
+            padding: { x: 5, y: 2 }
+          }).setOrigin(0.5).setVisible(false);
+          players[id] = { avatar, bubble };
+        } else {
+          players[id].avatar.setPosition(p.x, p.y);
+          players[id].bubble.setPosition(p.x, p.y - 40);
+        }
       }
+
+      // Remove disconnected players
+      for (let id in players) {
+        if (!data[id]) {
+          players[id].avatar.destroy();
+          players[id].bubble.destroy();
+          delete players[id];
+        }
+      }
+    });
+
+    socket.on("chat", ({ id, msg }) => {
+      const p = players[id];
+      if (p) {
+        p.bubble.setText(msg).setVisible(true);
+        this.time.delayedCall(3000, () => p.bubble.setVisible(false));
+      }
+    });
+
+    document.getElementById("chatSend").onclick = () => {
+      const input = document.getElementById("chatInput");
+      const msg = input.value.trim();
+      if (msg !== "") {
+        socket.emit("chat", msg);
+        input.value = "";
+      }
+    };
+  }
+
+  function update() {
+    const player = players[playerId];
+    if (!player) return;
+
+    let moved = false;
+    if (cursors.left.isDown) {
+      player.avatar.x -= 3;
+      moved = true;
+    } else if (cursors.right.isDown) {
+      player.avatar.x += 3;
+      moved = true;
+    }
+    if (cursors.up.isDown) {
+      player.avatar.y -= 3;
+      moved = true;
+    } else if (cursors.down.isDown) {
+      player.avatar.y += 3;
+      moved = true;
     }
 
-    for (const id in serverPlayers) {
-      const data = serverPlayers[id];
-      const avatarKey = data.avatarType === "wanita" ? "wanita" : "pria";
+    // Batas area map
+    player.avatar.x = Phaser.Math.Clamp(player.avatar.x, 0, 800);
+    player.avatar.y = Phaser.Math.Clamp(player.avatar.y, 0, 600);
 
-      if (!players[id]) {
-        const avatar = this.add.sprite(data.x, data.y, avatarKey).setScale(2);
-
-        const bubble = this.add.text(data.x, data.y - 40, "", {
-          font: "16px Arial",
-          fill: "#fff",
-          backgroundColor: "#000",
-          padding: { x: 5, y: 2 }
-        }).setOrigin(0.5).setVisible(false);
-
-        const nameTag = this.add.text(data.x, data.y - 60, data.name || "Anonim", {
-          font: "14px Arial",
-          fill: "#0f0"
-        }).setOrigin(0.5);
-
-        players[id] = { avatar, bubble, avatarType: data.avatarType };
-        this.nameTags[id] = nameTag;
-      } else {
-        players[id].avatar.setPosition(data.x, data.y);
-        players[id].bubble.setPosition(data.x, data.y - 40);
-        this.nameTags[id].setPosition(data.x, data.y - 60);
-      }
-    }
-  });
-
-  socket.on("chat", ({ id, msg }) => {
-    const player = players[id];
-    if (player) {
-      player.bubble.setText(msg).setVisible(true);
-      this.time.delayedCall(4000, () => {
-        player.bubble.setVisible(false);
+    if (moved) {
+      socket.emit("move", {
+        x: player.avatar.x,
+        y: player.avatar.y
       });
     }
-  });
-
-  const form = document.getElementById("chatForm");
-  const input = document.getElementById("chatInput");
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const msg = input.value.trim();
-    if (msg) {
-      socket.emit("chat", msg);
-      input.value = "";
-    }
-  });
-}
-
-function update() {
-  const player = players[playerId];
-  if (!player) return;
-
-  // Saat mengetik, jangan gerakkan karakter
-  if (document.activeElement === document.getElementById("chatInput")) return;
-
-  let moved = false;
-
-  if (this.cursors.left.isDown) {
-    player.avatar.x -= 3;
-    moved = true;
-  } else if (this.cursors.right.isDown) {
-    player.avatar.x += 3;
-    moved = true;
-  }
-
-  if (this.cursors.up.isDown) {
-    player.avatar.y -= 3;
-    moved = true;
-  } else if (this.cursors.down.isDown) {
-    player.avatar.y += 3;
-    moved = true;
-  }
-
-  // Batasi agar tidak keluar layar
-  player.avatar.x = Phaser.Math.Clamp(player.avatar.x, 20, 780);
-  player.avatar.y = Phaser.Math.Clamp(player.avatar.y, 20, 580);
-
-  if (moved) {
-    socket.emit("move", {
-      x: player.avatar.x,
-      y: player.avatar.y
-    });
   }
 }
