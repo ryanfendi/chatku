@@ -82,13 +82,24 @@ function create() {
 
   cursors = this.input.keyboard.createCursorKeys();
 
-  document.getElementById("sendBtn").addEventListener("click", () => {
-    const msg = document.getElementById("chatInput").value.trim();
-    if (msg) {
-      socket.emit("chat", msg);
-      document.getElementById("chatInput").value = "";
-    }
-  });
+  const chatInput = document.getElementById("chatInput");
+const sendBtn = document.getElementById("sendBtn");
+
+sendBtn.onclick = () => {
+  const msg = chatInput.value;
+  if (msg.trim() !== "") {
+    socket.emit("chat", msg);
+    chatInput.value = "";
+  }
+};
+
+chatInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault(); // Hindari submit form default
+    sendBtn.click();
+  }
+});
+
 
   this.player = this.add.sprite(400, 300, avatarType).setScale(1.5);
 }
