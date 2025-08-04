@@ -3,98 +3,67 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PixelChat</title>
+  <title>PixelChat RPG</title>
   <style>
-    body { margin: 0; overflow: hidden; background: #222; color: white; }
+    body { margin: 0; overflow: hidden; background: #222; }
     canvas { display: block; margin: auto; }
-    #chatBox {
-      position: fixed;
-      bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 90%;
-      max-width: 600px;
-      display: flex;
-      z-index: 10;
+    #chatUI, #nameForm, #avatarUploader {
+      position: fixed; z-index: 10;
+      left: 50%; transform: translateX(-50%);
+      font-family: Arial; color: white;
     }
+    #chatUI { bottom: 10px; display: flex; width: 90%; max-width: 600px; }
     #chatInput {
-      flex: 1;
-      padding: 10px;
-      font-size: 16px;
-      border: none;
-      border-radius: 10px;
-      outline: none;
+      flex: 1; padding: 10px; font-size: 16px;
+      border-radius: 10px; border: none;
     }
-    #chatSend {
-      background-color: #4CAF50;
-      color: white;
-      padding: 10px 15px;
-      border: none;
-      margin-left: 5px;
-      border-radius: 10px;
-      font-size: 16px;
-      cursor: pointer;
+    #sendBtn {
+      padding: 10px 15px; margin-left: 5px;
+      background: green; border: none;
+      border-radius: 10px; color: white;
     }
-    #avatarSelect {
-      position: fixed;
-      top: 30%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #111;
-      padding: 20px;
-      border-radius: 10px;
-      text-align: center;
-      z-index: 999;
+    #nameForm { top: 20%; background: #000; padding: 20px; border-radius: 10px; display: none; }
+    #avatarUploader {
+      top: 10px;
     }
-    #avatarSelect input {
-      margin-bottom: 10px;
-      padding: 8px;
-      font-size: 16px;
-      width: 80%;
-      border-radius: 8px;
-    }
-    #avatarSelect button {
-      margin: 10px;
-      padding: 10px 20px;
-      font-size: 18px;
-      border-radius: 10px;
-      cursor: pointer;
+    #emojiPicker {
+      position: fixed; bottom: 60px;
+      left: 50%; transform: translateX(-50%);
+      background: #000; padding: 10px;
+      border-radius: 10px; display: flex;
+      gap: 5px; font-size: 20px;
     }
   </style>
 </head>
 <body>
+  <!-- Upload Avatar -->
+  <div id="avatarUploader">
+    <input type="file" id="upload" accept="image/*">
+  </div>
 
-<div id="avatarSelect">
-  <h3 style="color: white;">Masukkan Nama dan Pilih Avatar</h3>
-  <input type="text" id="nameInput" placeholder="Nama kamu..." />
-  <br />
-  <button onclick="selectAvatar('pria')">👨 Pria</button>
-  <button onclick="selectAvatar('wanita')">👩 Wanita</button>
-</div>
+  <!-- Form Nama -->
+  <div id="nameForm">
+    <label>Masukkan Nama:</label><br/>
+    <input type="text" id="playerNameInput" placeholder="Nama kamu"/><br/>
+    <button onclick="submitName()">Masuk</button>
+  </div>
 
-<div id="chatBox">
-  <input type="text" id="chatInput" placeholder="Ketik pesan..." autocomplete="off" />
-  <button id="chatSend">Kirim</button>
-</div>
+  <!-- Chat -->
+  <div id="chatUI">
+    <input type="text" id="chatInput" placeholder="Ketik pesan...">
+    <button id="sendBtn">Kirim</button>
+  </div>
 
-<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-<script src="main.js"></script>
+  <!-- Emoji Picker -->
+  <div id="emojiPicker">
+    <span onclick="addEmoji('😀')">😀</span>
+    <span onclick="addEmoji('🎉')">🎉</span>
+    <span onclick="addEmoji('🔥')">🔥</span>
+    <span onclick="addEmoji('❤️')">❤️</span>
+  </div>
 
-<script>
-  function selectAvatar(type) {
-    const name = document.getElementById("nameInput").value.trim();
-    if (!name) return alert("Masukkan nama terlebih dahulu.");
-    localStorage.setItem("avatarType", type);
-    localStorage.setItem("playerName", name);
-    document.getElementById("avatarSelect").style.display = "none";
-    location.reload();
-  }
-
-  if (localStorage.getItem("avatarType") && localStorage.getItem("playerName")) {
-    document.getElementById("avatarSelect").style.display = "none";
-  }
-</script>
-
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>
