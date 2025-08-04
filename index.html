@@ -3,67 +3,69 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PixelChat RPG</title>
+  <title>Pixel Chat RPG</title>
   <style>
-    body { margin: 0; overflow: hidden; background: #222; }
+    body { margin: 0; background: #000; overflow: hidden; }
     canvas { display: block; margin: auto; }
-    #chatUI, #nameForm, #avatarUploader {
-      position: fixed; z-index: 10;
-      left: 50%; transform: translateX(-50%);
-      font-family: Arial; color: white;
+    #chatUI {
+      position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+      width: 90%; max-width: 600px; display: flex; z-index: 1000;
     }
-    #chatUI { bottom: 10px; display: flex; width: 90%; max-width: 600px; }
     #chatInput {
       flex: 1; padding: 10px; font-size: 16px;
-      border-radius: 10px; border: none;
+      border-radius: 8px; border: none;
     }
-    #sendBtn {
-      padding: 10px 15px; margin-left: 5px;
-      background: green; border: none;
-      border-radius: 10px; color: white;
+    #chatSend {
+      padding: 10px 20px; margin-left: 5px;
+      background: green; color: white; border: none;
+      border-radius: 8px; cursor: pointer;
     }
-    #nameForm { top: 20%; background: #000; padding: 20px; border-radius: 10px; display: none; }
-    #avatarUploader {
-      top: 10px;
+    #setup {
+      position: fixed; top: 20%; left: 50%; transform: translateX(-50%);
+      background: #111; color: white; padding: 20px; border-radius: 12px;
+      z-index: 9999; text-align: center;
+    }
+    #setup input, #setup button {
+      margin-top: 10px;
     }
     #emojiPicker {
-      position: fixed; bottom: 60px;
-      left: 50%; transform: translateX(-50%);
-      background: #000; padding: 10px;
-      border-radius: 10px; display: flex;
-      gap: 5px; font-size: 20px;
+      position: absolute; bottom: 60px; left: 50%;
+      transform: translateX(-50%);
+      background: #fff; border: 1px solid #ccc; border-radius: 10px;
+      display: none; z-index: 1001;
+    }
+    .emoji {
+      font-size: 20px; padding: 5px; cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <!-- Upload Avatar -->
-  <div id="avatarUploader">
-    <input type="file" id="upload" accept="image/*">
-  </div>
 
-  <!-- Form Nama -->
-  <div id="nameForm">
-    <label>Masukkan Nama:</label><br/>
-    <input type="text" id="playerNameInput" placeholder="Nama kamu"/><br/>
-    <button onclick="submitName()">Masuk</button>
-  </div>
+<div id="setup">
+  <h3>Masukkan Nama & Pilih Avatar</h3>
+  <input type="text" id="nameInput" placeholder="Nama kamu" /><br>
+  <button onclick="selectType('pria')">👨 Pria</button>
+  <button onclick="selectType('wanita')">👩 Wanita</button><br>
+  <input type="file" id="avatarUpload" accept="image/*" />
+  <button onclick="startGame()">Mulai</button>
+</div>
 
-  <!-- Chat -->
-  <div id="chatUI">
-    <input type="text" id="chatInput" placeholder="Ketik pesan...">
-    <button id="sendBtn">Kirim</button>
-  </div>
+<div id="chatUI">
+  <input type="text" id="chatInput" placeholder="Ketik pesan..." />
+  <button id="emojiBtn">🎨</button>
+  <button id="chatSend">Kirim</button>
+</div>
 
-  <!-- Emoji Picker -->
-  <div id="emojiPicker">
-    <span onclick="addEmoji('😀')">😀</span>
-    <span onclick="addEmoji('🎉')">🎉</span>
-    <span onclick="addEmoji('🔥')">🔥</span>
-    <span onclick="addEmoji('❤️')">❤️</span>
-  </div>
+<div id="emojiPicker">
+  <span class="emoji">😀</span>
+  <span class="emoji">😂</span>
+  <span class="emoji">😍</span>
+  <span class="emoji">👍</span>
+  <span class="emoji">🔥</span>
+</div>
 
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
-  <script src="main.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3"></script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="main.js"></script>
 </body>
 </html>
