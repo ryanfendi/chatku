@@ -2,7 +2,7 @@ const socket = io("https://aaf75f2e-9363-42c5-8eb9-ebd84ca1bc09-00-1hgnqynbkqk8k
 
 let playerId;
 let players = {};
-let playerName = localStorage.getItem("playerName") || "Anonim";
+let playerName = localStorage.getItem("playerName") || prompt("Masukkan nama kamu:") || "Anonim";
 let avatarImg = localStorage.getItem("customAvatar") || null;
 
 const config = {
@@ -92,11 +92,16 @@ function create() {
   const input = document.getElementById("chatInput");
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-    const msg = input.value.trim();
-    if (msg) {
+    const msg = input.value;
+    if (msg.trim()) {
       socket.emit("chat", msg);
       input.value = "";
     }
+  });
+
+  // FIX: Izinkan spasi di input chat
+  input.addEventListener("keydown", (e) => {
+    e.stopPropagation(); // cegah Phaser tangkap space
   });
 }
 
@@ -122,7 +127,7 @@ function update() {
     moved = true;
   }
 
-  // Batas layar
+  // Batas map
   player.avatar.x = Phaser.Math.Clamp(player.avatar.x, 0, 800);
   player.avatar.y = Phaser.Math.Clamp(player.avatar.y, 0, 600);
 
