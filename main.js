@@ -2,39 +2,15 @@ const socket = io("https://aaf75f2e-9363-42c5-8eb9-ebd84ca1bc09-00-1hgnqynbkqk8k
 
 let playerId;
 let players = {};
-let avatarImg = localStorage.getItem("avatarImg");
-let playerName = localStorage.getItem("playerName");
-
-if (!avatarImg || !playerName) {
-  document.getElementById("uploadUI").style.display = "block";
-}
-
-function startGame() {
-  const fileInput = document.getElementById("avatarFile");
-  const nameInput = document.getElementById("nameInput");
-
-  if (!fileInput.files[0] || !nameInput.value.trim()) {
-    alert("Lengkapi semua isian!");
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = function (e) {
-    avatarImg = e.target.result;
-    playerName = nameInput.value.trim();
-
-    localStorage.setItem("avatarImg", avatarImg);
-    localStorage.setItem("playerName", playerName);
-    location.reload();
-  };
-  reader.readAsDataURL(fileInput.files[0]);
-}
+let playerName = localStorage.getItem("playerName") || prompt("Masukkan nama:") || "Anonim";
+localStorage.setItem("playerName", playerName);
+let avatarImg = localStorage.getItem("avatarImg") || "https://i.imgur.com/uQaaapA.png"; // default pria
 
 const config = {
   type: Phaser.AUTO,
   width: 800,
   height: 600,
-  backgroundColor: "#1e1e1e",
+  backgroundColor: "#333",
   physics: {
     default: "arcade",
     arcade: { gravity: { y: 0 } }
@@ -42,33 +18,33 @@ const config = {
   scene: { preload, create, update }
 };
 
+let joystick;
+let move = { left: false, right: false, up: false, down: false };
+
 const game = new Phaser.Game(config);
 
 function preload() {
-  this.load.image("default", "https://i.imgur.com/uQaaapA.png");
-  if (avatarImg) this.textures.addBase64("custom", avatarImg);
+  this.load.image("avatar", avatarImg);
 }
 
 function create() {
   this.cursors = this.input.keyboard.createCursorKeys();
-  this.nameTags = {};
-  this.chatBubbles = {};
+
+  socket.emit("playerData", {
+    name: playerName,
+    avatarType: "custom",
+    avatarImg: avatarImg
+  });
 
   socket.on("init", (id) => {
     playerId = id;
-    socket.emit("playerData", {
-      name: playerName,
-      avatarType: "custom",
-      avatarImg
-    });
   });
 
   socket.on("state", (serverPlayers) => {
     for (const id in players) {
       if (!serverPlayers[id]) {
-        players[id].avatar.destroy();
-        this.nameTags[id]?.destroy();
-        this.chatBubbles[id]?.destroy();
+        players[id].sprite.destroy();
+        players[id].nameText.destroy();
         delete players[id];
       }
     }
@@ -76,44 +52,35 @@ function create() {
     for (const id in serverPlayers) {
       const data = serverPlayers[id];
       if (!players[id]) {
-        const avatarKey = data.avatarImg ? this.textures.addBase64(id, data.avatarImg) || id : "default";
-        const sprite = this.add.sprite(data.x, data.y, data.avatarImg ? id : "default").setScale(1.5);
-
+        const sprite = this.add.sprite(data.x, data.y, "avatar").setScale(2);
         const nameText = this.add.text(data.x, data.y - 40, data.name, {
           font: "14px Arial",
-          fill: "#0f0"
+          fill: "#fff"
         }).setOrigin(0.5);
-
-        const bubble = this.add.text(data.x, data.y - 60, "", {
-          font: "14px Arial",
-          fill: "#fff",
-          backgroundColor: "#000",
-          padding: { x: 4, y: 2 }
-        }).setOrigin(0.5).setVisible(false);
-
-        players[id] = { avatar: sprite };
-        this.nameTags[id] = nameText;
-        this.chatBubbles[id] = bubble;
+        players[id] = { sprite, nameText };
+      } else {
+        players[id].sprite.x = data.x;
+        players[id].sprite.y = data.y;
+        players[id].nameText.x = data.x;
+        players[id].nameText.y = data.y - 40;
       }
-
-      const sprite = players[id].avatar;
-      sprite.x = data.x;
-      sprite.y = data.y;
-      this.nameTags[id].x = data.x;
-      this.nameTags[id].y = data.y - 40;
-      this.chatBubbles[id].x = data.x;
-      this.chatBubbles[id].y = data.y - 60;
     }
   });
 
   socket.on("chat", ({ id, msg }) => {
-    const bubble = this.chatBubbles[id];
-    if (bubble) {
-      bubble.setText(msg).setVisible(true);
-      this.time.delayedCall(3000, () => bubble.setVisible(false));
+    const player = players[id];
+    if (player) {
+      const text = this.add.text(player.sprite.x, player.sprite.y - 60, msg, {
+        font: "14px Arial",
+        fill: "#fff",
+        backgroundColor: "#000",
+        padding: { x: 5, y: 3 }
+      }).setOrigin(0.5);
+      this.time.delayedCall(3000, () => text.destroy());
     }
   });
 
+  // chat
   document.getElementById("chatSend").onclick = () => {
     const input = document.getElementById("chatInput");
     const msg = input.value.trim();
@@ -122,6 +89,25 @@ function create() {
       input.value = "";
     }
   };
+
+  // joystick
+  joystick = nipplejs.create({
+    zone: document.getElementById('joystick-container'),
+    mode: 'static',
+    position: { left: '50%', top: '50%' },
+    color: 'white'
+  });
+
+  joystick.on('dir', (evt, data) => {
+    move.left = data.direction.x === 'left';
+    move.right = data.direction.x === 'right';
+    move.up = data.direction.y === 'up';
+    move.down = data.direction.y === 'down';
+  });
+
+  joystick.on('end', () => {
+    move = { left: false, right: false, up: false, down: false };
+  });
 }
 
 function update() {
@@ -129,22 +115,27 @@ function update() {
   if (!player) return;
 
   let moved = false;
-  const speed = 3;
-  const sprite = player.avatar;
-
-  if (this.cursors.left.isDown && sprite.x > 20) {
-    sprite.x -= speed; moved = true;
-  } else if (this.cursors.right.isDown && sprite.x < 780) {
-    sprite.x += speed; moved = true;
+  if (this.cursors.left.isDown || move.left) {
+    player.sprite.x -= 3;
+    moved = true;
   }
-
-  if (this.cursors.up.isDown && sprite.y > 20) {
-    sprite.y -= speed; moved = true;
-  } else if (this.cursors.down.isDown && sprite.y < 580) {
-    sprite.y += speed; moved = true;
+  if (this.cursors.right.isDown || move.right) {
+    player.sprite.x += 3;
+    moved = true;
+  }
+  if (this.cursors.up.isDown || move.up) {
+    player.sprite.y -= 3;
+    moved = true;
+  }
+  if (this.cursors.down.isDown || move.down) {
+    player.sprite.y += 3;
+    moved = true;
   }
 
   if (moved) {
-    socket.emit("move", { x: sprite.x, y: sprite.y });
+    socket.emit("move", {
+      x: player.sprite.x,
+      y: player.sprite.y
+    });
   }
 }
