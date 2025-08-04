@@ -96,6 +96,23 @@
     document.body.appendChild(script3);
   }
 </script>
+<!-- Chat Box -->
+<div id="chatBox">
+  <form id="chatForm" style="display:flex; width: 100%;">
+    <input type="text" id="chatInput" placeholder="Ketik pesan..." autocomplete="off" />
+    <button type="submit" id="chatSend">Kirim</button>
+    <button type="button" onclick="startVoiceNote()">🎤</button>
+    <button type="button" onclick="startCall()">📞</button>
+    <button type="button" onclick="startVideoCall()">📹</button>
+  </form>
+</div>
+
+<!-- Audio Container -->
+<audio id="voiceNoteAudio" controls style="display:none;"></audio>
+
+<!-- Video Elements -->
+<video id="localVideo" autoplay muted playsinline style="position:fixed; bottom:10px; right:120px; width:100px; height:80px; display:none;"></video>
+<video id="remoteVideo" autoplay playsinline style="position:fixed; bottom:100px; right:120px; width:100px; height:80px; display:none;"></video>
 
 </body>
 </html>
