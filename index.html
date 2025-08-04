@@ -3,68 +3,99 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PixelChat</title>
+  <title>PixelChat Avatar</title>
   <style>
-    body { margin: 0; overflow: hidden; background: #222; color: white; }
-    #avatarSelect {
-      position: absolute;
-      top: 30%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #111;
-      padding: 20px;
-      border-radius: 10px;
-      z-index: 1000;
-    }
-    #avatarSelect button {
-      margin: 5px;
-      padding: 10px;
-      font-size: 18px;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-    #chatUI {
-      position: fixed;
-      bottom: 10px;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      z-index: 999;
+    body { margin: 0; background: #222; color: white; overflow: hidden; font-family: sans-serif; }
+    canvas { display: block; margin: auto; }
+    #chatBox {
+      position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+      width: 90%; max-width: 600px; display: flex; z-index: 10;
     }
     #chatInput {
-      width: 70%;
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 10px;
+      flex: 1; padding: 10px; font-size: 16px; border-radius: 10px; outline: none;
       border: none;
     }
     #chatSend {
-      padding: 10px 15px;
-      font-size: 16px;
+      padding: 10px 15px; font-size: 16px; border-radius: 10px;
+      border: none; background-color: #4CAF50; color: white; cursor: pointer;
       margin-left: 5px;
-      border-radius: 10px;
-      background: #4CAF50;
-      border: none;
-      color: white;
-      cursor: pointer;
+    }
+    #avatarSelect {
+      position: fixed; top: 25%; left: 50%; transform: translateX(-50%);
+      background: #111; padding: 20px; border-radius: 10px; text-align: center; z-index: 1000;
+    }
+    #avatarSelect input, #avatarSelect button {
+      margin: 10px; padding: 10px; font-size: 16px; border-radius: 10px;
+    }
+    #avatarSelect .avatarButtons button {
+      width: 45%; margin: 5px;
     }
   </style>
 </head>
 <body>
 
+<!-- Avatar Selection UI -->
 <div id="avatarSelect">
-  <h3>Pilih Karakter:</h3>
-  <button onclick="selectAvatar('pria')">👨 Pria</button>
-  <button onclick="selectAvatar('wanita')">👩 Wanita</button>
+  <h3>Masukkan Nama & Pilih Avatar</h3>
+  <input type="text" id="nameInput" placeholder="Nama kamu" /><br/>
+  <div class="avatarButtons">
+    <button onclick="setAvatarType('pria')">👦 Pria</button>
+    <button onclick="setAvatarType('wanita')">👧 Wanita</button>
+  </div>
+  <input type="file" id="avatarUpload" accept="image/*"/><br/>
+  <button onclick="enterGame()" style="width: 100%; background: #4CAF50; color: white;">Enter Game</button>
 </div>
 
-<div id="chatUI">
-  <input id="chatInput" type="text" placeholder="Ketik pesan dengan emoji 😄👍..." />
-  <button id="chatSend">Kirim</button>
+<!-- Chat UI -->
+<div id="chatBox">
+  <form id="chatForm" style="display: flex; width: 100%;">
+    <input type="text" id="chatInput" placeholder="Ketik pesan..." autocomplete="off" required />
+    <button type="submit" id="chatSend">Kirim</button>
+  </form>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-<script src="main.js"></script>
+<script>
+  let avatarType = "pria"; // default
+  function setAvatarType(type) {
+    avatarType = type;
+  }
+
+  function enterGame() {
+    const name = document.getElementById("nameInput").value.trim();
+    if (!name) return alert("Masukkan nama terlebih dahulu");
+
+    localStorage.setItem("playerName", name);
+    localStorage.setItem("avatarType", avatarType);
+
+    const file = document.getElementById("avatarUpload").files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        localStorage.setItem("avatarCustom", reader.result);
+        document.getElementById("avatarSelect").style.display = "none";
+        startGame();
+      };
+      reader.readAsDataURL(file);
+    } else {
+      document.getElementById("avatarSelect").style.display = "none";
+      startGame();
+    }
+  }
+
+  function startGame() {
+    const script1 = document.createElement("script");
+    script1.src = "https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js";
+    document.body.appendChild(script1);
+
+    const script2 = document.createElement("script");
+    script2.src = "https://cdn.socket.io/4.7.2/socket.io.min.js";
+    document.body.appendChild(script2);
+
+    const script3 = document.createElement("script");
+    script3.src = "main.js";
+    document.body.appendChild(script3);
+  }
+</script>
+
 </body>
 </html>
